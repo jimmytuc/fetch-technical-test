@@ -8,26 +8,27 @@ const { check, validationResult } = require('express-validator');
 const validateCreateRequest = async (req) => {
   await check('validator_address')
     .isAlphanumeric()
-    .isLength({ min: 40 })
-    .withMessage('`validator_address` is required and must be a hashed string')
+    .withMessage('validator_address is required and must be a hashed string')
     .run(req);
 
   await check('public_key_type')
-    .withMessage('`public_key_type` is required')
+    .isString()
+    .withMessage('public_key_type is required')
     .run(req);
 
   await check('public_key_value')
-    .withMessage('`public_key_value` is required')
+    .isString()
+    .withMessage('public_key_value is required')
     .run(req);
 
   await check('validator_index')
     .isNumeric()
-    .withMessage('`validator_index` is required and must be a numeric')
+    .withMessage('validator_index is required and must be a numeric')
     .run(req);
 
   await check('voting_power')
     .isNumeric()
-    .withMessage('`voting_power` is required and must be a numeric')
+    .withMessage('voting_power is required and must be a numeric')
     .run(req);
 
   return validationResult(req);
@@ -45,6 +46,7 @@ const validatorController = () => {
       const {
         validator_address, public_key_type, public_key_value, validator_index, voting_power,
       } = req.body;
+
       const validator = await Validator.create({
         validatorAddress: validator_address,
         publicKeyType: public_key_type,
@@ -73,20 +75,19 @@ const validatorController = () => {
       let limit = parseInt(req.query.limit, 10);
       if (isNaN(limit)) {
         limit = 10;
-      } else if (limit > 100) {
-        limit = 100;
+      } else if (limit > 50) {
+        limit = 50;
       } else if (limit < 1) {
         limit = 1;
       }
       const offset = (page - 1) * limit;
-      const validators = await Validator.findAll({
-        paginate: {
-          offset,
-          limit,
-        },
+      const validators = await Validator.findAndCountAll({
+        offset,
+        limit,
+        where: { active: true },
       });
 
-      return httpStatusResponse(res, 200, { validators });
+      return httpStatusResponse(res, 200, { total: validators.count, validators: validators.rows });
     } catch (err) {
       return httpStatusResponse(res, 500, { msg: 'Internal server error' });
     }
@@ -98,6 +99,7 @@ const validatorController = () => {
       const validator = await Validator.findOne({
         where: {
           validatorAddress: address,
+          active: true,
         },
       });
 
