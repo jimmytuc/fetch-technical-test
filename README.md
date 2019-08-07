@@ -16,4 +16,5 @@
 - `make down`: dispose all services
 
 ## Issue?
-By default, `sequelize-cli` is installed locally, feel free to run `npm run migrate` if this error occurs: `relations 'validators' cannot be found`.
+- By default, `sequelize-cli` is installed locally, feel free to run `npm run migrate` if this error occurs: `relations 'validators' cannot be found`.
+- If it's still cannot? Change the `src/controllers/validatorController.js` to `src/controllers/ValidatorController.js`
