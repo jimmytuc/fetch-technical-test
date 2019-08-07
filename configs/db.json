@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "root",
+    "password": "postgres",
+    "database": "fetch_validator",
+    "host": "postgres",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "test": {
+    "username": "root",
+    "password": "postgres",
+    "database": "fetch_validator",
+    "host": "postgres",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  },
+  "production": {
+    "username": "root",
+    "password": "postgres",
+    "database": "fetch_validator",
+    "host": "postgres",
+    "dialect": "postgres",
+    "operatorsAliases": false
+  }
+}

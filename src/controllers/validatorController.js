@@ -2,7 +2,8 @@
 /* eslint-disable prefer-destructuring */
 /* eslint-disable no-restricted-globals */
 const httpStatusResponse = require('../helpers/http.response.status');
-const Validator = require('../models/validator');
+const Sequelize = require('sequelize');
+const Validator = require('../models').Validator;
 const { check, validationResult } = require('express-validator');
 
 const validateCreateRequest = async (req) => {
@@ -11,14 +12,14 @@ const validateCreateRequest = async (req) => {
     .withMessage('validator_address is required and must be a hashed string')
     .run(req);
 
-  await check('public_key_type')
-    .isString()
-    .withMessage('public_key_type is required')
+  await check('public_key.type')
+    .not().isEmpty()
+    .withMessage('public_key.type is required')
     .run(req);
 
-  await check('public_key_value')
-    .isString()
-    .withMessage('public_key_value is required')
+  await check('public_key.value')
+    .not().isEmpty()
+    .withMessage('public_key.value is required')
     .run(req);
 
   await check('validator_index')
@@ -34,6 +35,39 @@ const validateCreateRequest = async (req) => {
   return validationResult(req);
 };
 
+const findInsertOrUpdate = async ({
+  validator_address, public_key, validator_index, voting_power,
+}) => {
+  const validator = await Validator.findOne({
+    where: Sequelize.or(
+      {
+        validatorAddress: validator_address,
+      },
+      {
+        publicKeyType: public_key.type,
+        publicKeyValue: public_key.value,
+      },
+    ),
+  });
+
+  let result = null;
+  if (validator) {
+    result = await validator.update({
+      validatorIndex: validator.validatorIndex + 1,
+      votingPower: validator.votingPower + (validator.votingPower % 10),
+    });
+  } else {
+    result = await Validator.create({
+      validatorAddress: validator_address,
+      publicKeyType: public_key.type,
+      publicKeyValue: public_key.value,
+      validatorIndex: validator_index,
+      votingPower: voting_power,
+    });
+  }
+
+  return result;
+};
 
 const validatorController = () => {
   const create = async (req, res) => {
@@ -43,17 +77,7 @@ const validatorController = () => {
     }
 
     try {
-      const {
-        validator_address, public_key_type, public_key_value, validator_index, voting_power,
-      } = req.body;
-
-      const validator = await Validator.create({
-        validatorAddress: validator_address,
-        publicKeyType: public_key_type,
-        publicKeyValue: public_key_value,
-        validatorIndex: validator_index,
-        votingPower: voting_power,
-      });
+      const validator = await findInsertOrUpdate(req.body);
 
       return httpStatusResponse(res, 200, { validator });
     } catch (err) {
@@ -96,7 +120,7 @@ const validatorController = () => {
   const getOne = async (req, res) => {
     const address = req.params.address;
     try {
-      const validator = await Validator.findOne({
+      let validator = await Validator.findOne({
         where: {
           validatorAddress: address,
           active: true,
@@ -107,6 +131,7 @@ const validatorController = () => {
         return httpStatusResponse(res, 404, { errors: `address: ${address} not found!` });
       }
 
+      validator = validator.toJSON();
       return httpStatusResponse(res, 200, { validator });
     } catch (err) {
       return httpStatusResponse(res, 500, { msg: 'Internal server error' });

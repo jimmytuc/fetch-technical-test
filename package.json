@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./src/app.js",
+    "migrate": "./node_modules/.bin/sequelize db:migrate",
+    "start": "npm run migrate && node ./src/app.js",
     "nodemon": "nodemon --exec npm run start",
     "lint": "eslint ./src/. ./configs/. ./tests/.",
     "pretest": "npm run lint",
-    "test": "cross-env NODE_ENV=testing jest --coverage",
-    "test-ci": "jest --coverage --forceExit"
+    "test": "npm run migrate && cross-env NODE_ENV=testing jest --coverage",
+    "test-ci": "npm run migrate && jest --coverage --forceExit"
   },
   "jest": {
     "globals": {
@@ -36,13 +37,14 @@
     "sequelize": "^5.12.2"
   },
   "devDependencies": {
-    "nodemon": "^1.18.11",
+    "cross-env": "^5.1.4",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.11.0",
-    "cross-env": "^5.1.4",
     "husky": "^0.14.3",
     "jest": "^24.8.0",
+    "nodemon": "^1.18.11",
+    "sequelize-cli": "^5.5.0",
     "shx": "^0.2.2",
     "supertest": "^3.0.0"
   }

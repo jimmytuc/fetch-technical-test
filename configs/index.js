@@ -2,7 +2,7 @@ const routes = require('./routes');
 
 const config = {
   routes,
-  migrate: false,
+  migrate: true,
   port: process.env.PORT || '3000',
 };
 

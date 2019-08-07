@@ -1,13 +1,15 @@
+/* eslint-disable max-len */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-plusplus */
 /* eslint-disable no-await-in-loop */
 const request = require('supertest');
 const { beforeAction, afterAction } = require('../init/setup');
 const { randomInt, randomString } = require('../../src/helpers/random');
-const Validator = require('../../src/models/validator');
+// eslint-disable-next-line prefer-destructuring
+const Validator = require('../../src/models').Validator;
 
 const ENDPOINT = '/api/v1';
-const SIZE = 100;
+const SIZE = 101;
 const validators = [];
 let app;
 let address;
@@ -45,13 +47,16 @@ afterEach(async (done) => {
   done();
 });
 
+
 test('ValidatorAPI request create', async () => {
   const res = await request(app)
     .post(`${ENDPOINT}/validators`)
     .send({
       validator_address: randomString(20),
-      public_key_type: `test/${randomString()}`,
-      public_key_value: randomString(25),
+      public_key: {
+        type: `test/${randomString()}`,
+        value: randomString(25),
+      },
       validator_index: randomInt(),
       voting_power: randomInt(),
     })
@@ -64,7 +69,6 @@ test('ValidatorAPI request create', async () => {
   });
 
   const jsonValidator = validator.toJSON();
-
   expect(jsonValidator.publicKey.type).toBe(res.body.validator.publicKey.type);
   expect(jsonValidator.publicKey.value).toBe(res.body.validator.publicKey.value);
 
@@ -75,14 +79,79 @@ test('ValidatorAPI validating request create', async () => {
   const res = await request(app)
     .post(`${ENDPOINT}/validators`)
     .send({
-      public_key_type: `test/${randomString()}`,
-      public_key_value: randomString(25),
+      public_key: {
+        type: `test/${randomString()}`,
+        value: randomString(25),
+      },
       validator_index: randomInt(),
       voting_power: randomInt(),
     })
     .expect(400);
 
   expect(res.body.errors).toBeTruthy();
+});
+
+test('ValidatorAPI request create on existing address', async () => {
+  const inputAddress = randomString(20);
+  const res = await request(app)
+    .post(`${ENDPOINT}/validators`)
+    .send({
+      validator_address: inputAddress,
+      public_key: {
+        type: `test/${randomString()}`,
+        value: randomString(25),
+      },
+      validator_index: randomInt(),
+      voting_power: randomInt(),
+    })
+    .expect(200);
+
+  const res2 = await request(app)
+    .post(`${ENDPOINT}/validators`)
+    .send({
+      validator_address: inputAddress,
+      public_key: {
+        type: `test/${randomString()}`,
+        value: randomString(25),
+      },
+      validator_index: randomInt(),
+      voting_power: randomInt(),
+    })
+    .expect(200);
+
+  const votingPowerIncrease = res.body.validator.votingPower % 10;
+  expect(res2.body.validator.validatorIndex).toBe(res.body.validator.validatorIndex + 1);
+  expect(res2.body.validator.votingPower).toBe(res.body.validator.votingPower + votingPowerIncrease);
+});
+
+test('ValidatorAPI request create on existing publicKey', async () => {
+  const publicKey = {
+    type: `test/${randomString()}`,
+    value: randomString(25),
+  };
+  const res = await request(app)
+    .post(`${ENDPOINT}/validators`)
+    .send({
+      validator_address: randomString(20),
+      public_key: publicKey,
+      validator_index: randomInt(),
+      voting_power: randomInt(),
+    })
+    .expect(200);
+
+  const res2 = await request(app)
+    .post(`${ENDPOINT}/validators`)
+    .send({
+      validator_address: randomString(20),
+      public_key: publicKey,
+      validator_index: randomInt(),
+      voting_power: randomInt(),
+    })
+    .expect(200);
+
+  const votingPowerIncrease = res.body.validator.votingPower % 10;
+  expect(res2.body.validator.validatorIndex).toBe(res.body.validator.validatorIndex + 1);
+  expect(res2.body.validator.votingPower).toBe(res.body.validator.votingPower + votingPowerIncrease);
 });
 
 test('ValidatorAPI request getAll with default limit = 10', async () => {

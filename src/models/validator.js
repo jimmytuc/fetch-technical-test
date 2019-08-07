@@ -1,7 +1,6 @@
+/* eslint-disable func-names */
+/* eslint-disable camelcase */
 /* eslint-disable no-unused-vars */
-const Sequelize = require('sequelize');
-const sequelize = require('../../configs/database');
-
 const hooks = {
   beforeCreate(_validator) {
 
@@ -11,47 +10,55 @@ const hooks = {
   },
 };
 
-const tableName = 'validators';
-const Validator = sequelize.define('Validator', {
-  validatorAddress: {
-    type: Sequelize.STRING,
-    allowNull: false,
+const tableName = 'Validators';
+const defaultScope = {
+  attributes: {
+    exclude: ['active', 'createdAt', 'updatedAt'],
   },
-  publicKeyType: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  publicKeyValue: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  validatorIndex: {
-    type: Sequelize.INTEGER(10),
-    allowNull: false,
-  },
-  votingPower: {
-    type: Sequelize.INTEGER(10),
-    allowNull: false,
-  },
-  active: {
-    type: Sequelize.BOOLEAN,
-    defaultValue: true,
-  },
-}, { hooks, tableName });
-
-// eslint-disable-next-line func-names
-Validator.prototype.toJSON = function () {
-  const values = Object.assign({}, this.get());
-  const transformedPublicKey = {
-    publicKey: {
-      type: values.publicKeyType,
-      value: values.publicKeyValue,
-    },
-  };
-  delete values.id;
-  delete values.publicKeyType;
-  delete values.publicKeyValue;
-  return Object.assign(values, transformedPublicKey);
 };
 
-module.exports = Validator;
+module.exports = (sequelize, DataTypes) => {
+  const Validator = sequelize.define('Validator', {
+    validatorAddress: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    publicKeyType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    publicKeyValue: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    validatorIndex: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    votingPower: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  }, { hooks, tableName, defaultScope });
+
+  // eslint-disable-next-line func-names
+  Validator.prototype.toJSON = function () {
+    const values = Object.assign({}, this.get());
+    const transformedPublicKey = {
+      publicKey: {
+        type: values.publicKeyType,
+        value: values.publicKeyValue,
+      },
+    };
+    delete values.id;
+    delete values.publicKeyType;
+    delete values.publicKeyValue;
+    return Object.assign(values, transformedPublicKey);
+  };
+
+  return Validator;
+};
